@@ -335,24 +335,50 @@
         </div>
     </div>
 
-    <script>
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getDatabase, ref, set, remove, onValue } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyD7oBcx9e71nwM1zE6XCcy05a70F9oD4q0",
+            authDomain: "wine-fridge-js.firebaseapp.com",
+            databaseURL: "https://wine-fridge-js-default-rtdb.firebaseio.com",
+            projectId: "wine-fridge-js",
+            storageBucket: "wine-fridge-js.firebasestorage.app",
+            messagingSenderId: "1038956566162",
+            appId: "1:1038956566162:web:8d66e451c8e66aa587f84b"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+        const winesRef = ref(database, 'wines');
+
         const ROWS = 7;
         const COLS = 5;
-        const STORAGE_KEY = 'wineFridgeData';
 
         let wines = {};
+        let isInitialLoad = true;
 
-        function loadData() {
-            const saved = localStorage.getItem(STORAGE_KEY);
-            if (saved) {
-                wines = JSON.parse(saved);
-            }
-        }
-
-        function saveData() {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(wines));
+        onValue(winesRef, (snapshot) => {
+            const data = snapshot.val();
+            wines = data || {};
+            renderFridge();
             updateStats();
-        }
+
+            if (isInitialLoad) {
+                const localData = localStorage.getItem('wineFridgeData');
+                if (localData && Object.keys(wines).length === 0) {
+                    const localWines = JSON.parse(localData);
+                    if (Object.keys(localWines).length > 0) {
+                        if (confirm('Found local wine data. Would you like to upload it to the cloud?')) {
+                            set(winesRef, localWines);
+                        }
+                    }
+                }
+                localStorage.removeItem('wineFridgeData');
+                isInitialLoad = false;
+            }
+        });
 
         function updateStats() {
             const filled = Object.keys(wines).length;
@@ -379,10 +405,10 @@
                     if (wines[slotKey]) {
                         const wine = wines[slotKey];
                         slot.innerHTML = `<div class="bottle-filled ${wine.type}">${wine.name.substring(0, 15)}</div>`;
-                        slot.onclick = () => viewWine(row, col);
+                        slot.onclick = () => window.viewWine(row, col);
                     } else {
                         slot.innerHTML = '<div class="bottle-empty">+</div>';
-                        slot.onclick = () => addWine(row, col);
+                        slot.onclick = () => window.addWine(row, col);
                     }
 
                     rowDiv.appendChild(slot);
@@ -392,12 +418,12 @@
             }
         }
 
-        function addWine(row, col) {
+        window.addWine = function(row, col) {
             const slotKey = getSlotKey(row, col);
 
             document.getElementById('modalTitle').textContent = `Add Wine - Row ${row + 1}, Slot ${col + 1}`;
             document.getElementById('modalBody').innerHTML = `
-                <form id="wineForm" onsubmit="saveWine(event, ${row}, ${col})">
+                <form id="wineForm" onsubmit="window.saveWine(event, ${row}, ${col})">
                     <div class="form-group">
                         <label for="wineName">Wine Name *</label>
                         <input type="text" id="wineName" required>
@@ -430,7 +456,7 @@
                         <textarea id="wineNotes" placeholder="Tasting notes, occasion, etc."></textarea>
                     </div>
                     <div class="button-group">
-                        <button type="button" class="btn-secondary" onclick="closeModal()">Cancel</button>
+                        <button type="button" class="btn-secondary" onclick="window.closeModal()">Cancel</button>
                         <button type="submit" class="btn-primary">Save</button>
                     </div>
                 </form>
@@ -439,11 +465,11 @@
             openModal();
         }
 
-        function saveWine(event, row, col) {
+        window.saveWine = function(event, row, col) {
             event.preventDefault();
 
             const slotKey = getSlotKey(row, col);
-            wines[slotKey] = {
+            const wineData = {
                 name: document.getElementById('wineName').value,
                 producer: document.getElementById('wineProducer').value,
                 year: document.getElementById('wineYear').value,
@@ -452,12 +478,13 @@
                 notes: document.getElementById('wineNotes').value
             };
 
-            saveData();
-            renderFridge();
+            const wineSlotRef = ref(database, `wines/${slotKey}`);
+            set(wineSlotRef, wineData);
+
             closeModal();
         }
 
-        function viewWine(row, col) {
+        window.viewWine = function(row, col) {
             const slotKey = getSlotKey(row, col);
             const wine = wines[slotKey];
 
@@ -472,20 +499,19 @@
                     ${wine.notes ? `<p><strong>Notes:</strong> ${wine.notes}</p>` : ''}
                 </div>
                 <div class="button-group">
-                    <button class="btn-secondary" onclick="closeModal()">Close</button>
-                    <button class="btn-danger" onclick="deleteWine(${row}, ${col})">Remove</button>
+                    <button class="btn-secondary" onclick="window.closeModal()">Close</button>
+                    <button class="btn-danger" onclick="window.deleteWine(${row}, ${col})">Remove</button>
                 </div>
             `;
 
             openModal();
         }
 
-        function deleteWine(row, col) {
+        window.deleteWine = function(row, col) {
             if (confirm('Are you sure you want to remove this wine?')) {
                 const slotKey = getSlotKey(row, col);
-                delete wines[slotKey];
-                saveData();
-                renderFridge();
+                const wineSlotRef = ref(database, `wines/${slotKey}`);
+                remove(wineSlotRef);
                 closeModal();
             }
         }
@@ -494,13 +520,9 @@
             document.getElementById('modal').classList.add('active');
         }
 
-        function closeModal() {
+        window.closeModal = function() {
             document.getElementById('modal').classList.remove('active');
         }
-
-        loadData();
-        renderFridge();
-        updateStats();
     </script>
 </body>
 </html>
