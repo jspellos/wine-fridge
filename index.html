@@ -290,6 +290,55 @@
             color: #667eea;
         }
 
+        .search-container {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(255,255,255,0.9);
+            border-radius: 10px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        #searchInput {
+            flex: 1;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            font-family: inherit;
+        }
+
+        #searchInput:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        #clearSearch {
+            padding: 12px 20px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        #clearSearch:hover {
+            background: #5a6268;
+        }
+
+        .bottle-slot.dimmed {
+            opacity: 0.3;
+        }
+
+        .bottle-slot.highlighted {
+            transform: scale(1.1);
+            z-index: 10;
+        }
+
         @media (max-width: 480px) {
             h1 {
                 font-size: 24px;
@@ -322,6 +371,11 @@
 
         <div class="stats">
             <span id="filledCount">0</span> / 35 bottles stored
+        </div>
+
+        <div class="search-container">
+            <input type="text" id="searchInput" placeholder="Search wines (name, producer, region, notes...)">
+            <button id="clearSearch" style="display: none;">Clear</button>
         </div>
     </div>
 
@@ -358,11 +412,12 @@
 
         let wines = {};
         let isInitialLoad = true;
+        let searchQuery = '';
 
         onValue(winesRef, (snapshot) => {
             const data = snapshot.val();
             wines = data || {};
-            renderFridge();
+            renderFridge(searchQuery);
             updateStats();
 
             if (isInitialLoad) {
@@ -389,7 +444,20 @@
             return `${row}-${col}`;
         }
 
-        function renderFridge() {
+        function matchesSearch(wine, query) {
+            if (!query) return true;
+            const lowerQuery = query.toLowerCase();
+            return (
+                (wine.name && wine.name.toLowerCase().includes(lowerQuery)) ||
+                (wine.producer && wine.producer.toLowerCase().includes(lowerQuery)) ||
+                (wine.year && wine.year.toString().includes(lowerQuery)) ||
+                (wine.type && wine.type.toLowerCase().includes(lowerQuery)) ||
+                (wine.region && wine.region.toLowerCase().includes(lowerQuery)) ||
+                (wine.notes && wine.notes.toLowerCase().includes(lowerQuery))
+            );
+        }
+
+        function renderFridge(query = '') {
             const fridge = document.getElementById('wineFridge');
             fridge.innerHTML = '';
 
@@ -404,11 +472,21 @@
 
                     if (wines[slotKey]) {
                         const wine = wines[slotKey];
-                        slot.innerHTML = `<div class="bottle-filled ${wine.type}">${wine.name.substring(0, 15)}</div>`;
+                        const displayText = wine.year ? `${wine.year} ${wine.name}` : wine.name;
+                        slot.innerHTML = `<div class="bottle-filled ${wine.type}">${displayText.substring(0, 15)}</div>`;
                         slot.onclick = () => window.viewWine(row, col);
+
+                        if (query && !matchesSearch(wine, query)) {
+                            slot.classList.add('dimmed');
+                        } else if (query && matchesSearch(wine, query)) {
+                            slot.classList.add('highlighted');
+                        }
                     } else {
                         slot.innerHTML = '<div class="bottle-empty">+</div>';
                         slot.onclick = () => window.addWine(row, col);
+                        if (query) {
+                            slot.classList.add('dimmed');
+                        }
                     }
 
                     rowDiv.appendChild(slot);
@@ -570,6 +648,22 @@
         window.closeModal = function() {
             document.getElementById('modal').classList.remove('active');
         }
+
+        const searchInput = document.getElementById('searchInput');
+        const clearButton = document.getElementById('clearSearch');
+
+        searchInput.addEventListener('input', (e) => {
+            searchQuery = e.target.value.trim();
+            renderFridge(searchQuery);
+            clearButton.style.display = searchQuery ? 'block' : 'none';
+        });
+
+        clearButton.addEventListener('click', () => {
+            searchInput.value = '';
+            searchQuery = '';
+            renderFridge(searchQuery);
+            clearButton.style.display = 'none';
+        });
     </script>
 </body>
 </html>
