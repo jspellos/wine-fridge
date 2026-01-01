@@ -85,14 +85,36 @@
             height: 100%;
             border-radius: 50%;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
             font-weight: bold;
-            font-size: 12px;
+            font-size: 9px;
             text-align: center;
-            padding: 5px;
+            padding: 4px;
             overflow: hidden;
             position: relative;
+            line-height: 1.2;
+        }
+
+        .bottle-filled .year-producer {
+            font-size: 8px;
+            opacity: 0.9;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 100%;
+        }
+
+        .bottle-filled .wine-name {
+            font-size: 9px;
+            margin-top: 1px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 100%;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
         }
 
         .bottle-filled.red {
@@ -472,8 +494,21 @@
 
                     if (wines[slotKey]) {
                         const wine = wines[slotKey];
-                        const displayText = wine.year ? `${wine.year} ${wine.name}` : wine.name;
-                        slot.innerHTML = `<div class="bottle-filled ${wine.type}">${displayText.substring(0, 15)}</div>`;
+
+                        const yearProducerParts = [];
+                        if (wine.year) yearProducerParts.push(wine.year);
+                        if (wine.producer) {
+                            const producerAbbrev = wine.producer.length > 10 ? wine.producer.substring(0, 10) + '...' : wine.producer;
+                            yearProducerParts.push(producerAbbrev);
+                        }
+                        const yearProducerLine = yearProducerParts.join(' ');
+
+                        const wineNameLine = wine.name || '';
+
+                        slot.innerHTML = `<div class="bottle-filled ${wine.type}">
+                            ${yearProducerLine ? `<div class="year-producer">${yearProducerLine}</div>` : ''}
+                            <div class="wine-name">${wineNameLine}</div>
+                        </div>`;
                         slot.onclick = () => window.viewWine(row, col);
 
                         if (query && !matchesSearch(wine, query)) {
