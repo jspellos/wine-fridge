@@ -500,11 +500,58 @@
                 </div>
                 <div class="button-group">
                     <button class="btn-secondary" onclick="window.closeModal()">Close</button>
+                    <button class="btn-primary" onclick="window.editWine(${row}, ${col})">Edit</button>
                     <button class="btn-danger" onclick="window.deleteWine(${row}, ${col})">Remove</button>
                 </div>
             `;
 
             openModal();
+        }
+
+        window.editWine = function(row, col) {
+            const slotKey = getSlotKey(row, col);
+            const wine = wines[slotKey];
+
+            document.getElementById('modalTitle').textContent = `Edit Wine - Row ${row + 1}, Slot ${col + 1}`;
+            document.getElementById('modalBody').innerHTML = `
+                <form id="wineForm" onsubmit="window.saveWine(event, ${row}, ${col})">
+                    <div class="form-group">
+                        <label for="wineName">Wine Name *</label>
+                        <input type="text" id="wineName" required value="${wine.name || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label for="wineProducer">Wine Producer</label>
+                        <input type="text" id="wineProducer" placeholder="e.g. Château Margaux" value="${wine.producer || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label for="wineYear">Vintage Year</label>
+                        <input type="number" id="wineYear" min="1900" max="2030" placeholder="e.g. 2018" value="${wine.year || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label for="wineType">Type *</label>
+                        <select id="wineType" required>
+                            <option value="red" ${wine.type === 'red' ? 'selected' : ''}>Red</option>
+                            <option value="white" ${wine.type === 'white' ? 'selected' : ''}>White</option>
+                            <option value="rose" ${wine.type === 'rose' ? 'selected' : ''}>Rosé</option>
+                            <option value="sparkling" ${wine.type === 'sparkling' ? 'selected' : ''}>Sparkling</option>
+                            <option value="port" ${wine.type === 'port' ? 'selected' : ''}>Port</option>
+                            <option value="other" ${wine.type === 'other' ? 'selected' : ''}>Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="wineRegion">Region</label>
+                        <input type="text" id="wineRegion" placeholder="e.g. Bordeaux, France" value="${wine.region || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label for="wineNotes">Notes</label>
+                        <textarea id="wineNotes" placeholder="Tasting notes, occasion, etc.">${wine.notes || ''}</textarea>
+                    </div>
+                    <div class="button-group">
+                        <button type="button" class="btn-secondary" onclick="window.closeModal()">Cancel</button>
+                        <button type="submit" class="btn-primary">Save Changes</button>
+                    </div>
+                </form>
+            `;
         }
 
         window.deleteWine = function(row, col) {
