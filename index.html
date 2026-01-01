@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wine Fridge Manager</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            font-size: 28px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .wine-fridge {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .row {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 15px;
+            gap: 8px;
+        }
+
+        .row:last-child {
+            margin-bottom: 0;
+        }
+
+        .bottle-slot {
+            flex: 1;
+            aspect-ratio: 1;
+            max-width: 80px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            position: relative;
+        }
+
+        .bottle-slot:hover {
+            transform: scale(1.05);
+        }
+
+        .bottle-slot:active {
+            transform: scale(0.95);
+        }
+
+        .bottle-empty {
+            width: 100%;
+            height: 100%;
+            border: 3px dashed #ccc;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8f9fa;
+            color: #999;
+            font-size: 24px;
+        }
+
+        .bottle-filled {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 12px;
+            text-align: center;
+            padding: 5px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .bottle-filled.red {
+            background: linear-gradient(135deg, #8B0000, #DC143C);
+            color: white;
+        }
+
+        .bottle-filled.white {
+            background: linear-gradient(135deg, #F5DEB3, #FFE4B5);
+            color: #333;
+        }
+
+        .bottle-filled.rose {
+            background: linear-gradient(135deg, #FFB6C1, #FFC0CB);
+            color: #333;
+        }
+
+        .bottle-filled.sparkling {
+            background: linear-gradient(135deg, #FFD700, #FFF8DC);
+            color: #333;
+        }
+
+        .bottle-filled.port {
+            background: linear-gradient(135deg, #722F37, #A0522D);
+            color: white;
+        }
+
+        .bottle-filled.other {
+            background: linear-gradient(135deg, #9370DB, #BA55D3);
+            color: white;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            max-width: 400px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            font-size: 22px;
+            color: #333;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: #999;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .close-btn:hover {
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(220, 53, 69, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .wine-details {
+            line-height: 1.6;
+        }
+
+        .wine-details p {
+            margin-bottom: 10px;
+        }
+
+        .wine-details strong {
+            color: #667eea;
+        }
+
+        .stats {
+            text-align: center;
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(255,255,255,0.9);
+            border-radius: 10px;
+            color: #555;
+        }
+
+        .stats span {
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 24px;
+            }
+
+            .wine-fridge {
+                padding: 15px;
+            }
+
+            .row {
+                gap: 5px;
+                margin-bottom: 10px;
+            }
+
+            .bottle-slot {
+                max-width: 60px;
+            }
+
+            .modal-content {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🍷 Wine Fridge Manager</h1>
+
+        <div class="wine-fridge" id="wineFridge"></div>
+
+        <div class="stats">
+            <span id="filledCount">0</span> / 35 bottles stored
+        </div>
+    </div>
+
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Add Wine</h2>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+
+    <script>
+        const ROWS = 7;
+        const COLS = 5;
+        const STORAGE_KEY = 'wineFridgeData';
+
+        let wines = {};
+
+        function loadData() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                wines = JSON.parse(saved);
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(wines));
+            updateStats();
+        }
+
+        function updateStats() {
+            const filled = Object.keys(wines).length;
+            document.getElementById('filledCount').textContent = filled;
+        }
+
+        function getSlotKey(row, col) {
+            return `${row}-${col}`;
+        }
+
+        function renderFridge() {
+            const fridge = document.getElementById('wineFridge');
+            fridge.innerHTML = '';
+
+            for (let row = 0; row < ROWS; row++) {
+                const rowDiv = document.createElement('div');
+                rowDiv.className = 'row';
+
+                for (let col = 0; col < COLS; col++) {
+                    const slotKey = getSlotKey(row, col);
+                    const slot = document.createElement('div');
+                    slot.className = 'bottle-slot';
+
+                    if (wines[slotKey]) {
+                        const wine = wines[slotKey];
+                        slot.innerHTML = `<div class="bottle-filled ${wine.type}">${wine.name.substring(0, 15)}</div>`;
+                        slot.onclick = () => viewWine(row, col);
+                    } else {
+                        slot.innerHTML = '<div class="bottle-empty">+</div>';
+                        slot.onclick = () => addWine(row, col);
+                    }
+
+                    rowDiv.appendChild(slot);
+                }
+
+                fridge.appendChild(rowDiv);
+            }
+        }
+
+        function addWine(row, col) {
+            const slotKey = getSlotKey(row, col);
+
+            document.getElementById('modalTitle').textContent = `Add Wine - Row ${row + 1}, Slot ${col + 1}`;
+            document.getElementById('modalBody').innerHTML = `
+                <form id="wineForm" onsubmit="saveWine(event, ${row}, ${col})">
+                    <div class="form-group">
+                        <label for="wineName">Wine Name *</label>
+                        <input type="text" id="wineName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="wineProducer">Wine Producer</label>
+                        <input type="text" id="wineProducer" placeholder="e.g. Château Margaux">
+                    </div>
+                    <div class="form-group">
+                        <label for="wineYear">Vintage Year</label>
+                        <input type="number" id="wineYear" min="1900" max="2030" placeholder="e.g. 2018">
+                    </div>
+                    <div class="form-group">
+                        <label for="wineType">Type *</label>
+                        <select id="wineType" required>
+                            <option value="red">Red</option>
+                            <option value="white">White</option>
+                            <option value="rose">Rosé</option>
+                            <option value="sparkling">Sparkling</option>
+                            <option value="port">Port</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="wineRegion">Region</label>
+                        <input type="text" id="wineRegion" placeholder="e.g. Bordeaux, France">
+                    </div>
+                    <div class="form-group">
+                        <label for="wineNotes">Notes</label>
+                        <textarea id="wineNotes" placeholder="Tasting notes, occasion, etc."></textarea>
+                    </div>
+                    <div class="button-group">
+                        <button type="button" class="btn-secondary" onclick="closeModal()">Cancel</button>
+                        <button type="submit" class="btn-primary">Save</button>
+                    </div>
+                </form>
+            `;
+
+            openModal();
+        }
+
+        function saveWine(event, row, col) {
+            event.preventDefault();
+
+            const slotKey = getSlotKey(row, col);
+            wines[slotKey] = {
+                name: document.getElementById('wineName').value,
+                producer: document.getElementById('wineProducer').value,
+                year: document.getElementById('wineYear').value,
+                type: document.getElementById('wineType').value,
+                region: document.getElementById('wineRegion').value,
+                notes: document.getElementById('wineNotes').value
+            };
+
+            saveData();
+            renderFridge();
+            closeModal();
+        }
+
+        function viewWine(row, col) {
+            const slotKey = getSlotKey(row, col);
+            const wine = wines[slotKey];
+
+            document.getElementById('modalTitle').textContent = wine.name;
+            document.getElementById('modalBody').innerHTML = `
+                <div class="wine-details">
+                    <p><strong>Position:</strong> Row ${row + 1}, Slot ${col + 1}</p>
+                    ${wine.producer ? `<p><strong>Producer:</strong> ${wine.producer}</p>` : ''}
+                    ${wine.year ? `<p><strong>Vintage:</strong> ${wine.year}</p>` : ''}
+                    <p><strong>Type:</strong> ${wine.type.charAt(0).toUpperCase() + wine.type.slice(1)}</p>
+                    ${wine.region ? `<p><strong>Region:</strong> ${wine.region}</p>` : ''}
+                    ${wine.notes ? `<p><strong>Notes:</strong> ${wine.notes}</p>` : ''}
+                </div>
+                <div class="button-group">
+                    <button class="btn-secondary" onclick="closeModal()">Close</button>
+                    <button class="btn-danger" onclick="deleteWine(${row}, ${col})">Remove</button>
+                </div>
+            `;
+
+            openModal();
+        }
+
+        function deleteWine(row, col) {
+            if (confirm('Are you sure you want to remove this wine?')) {
+                const slotKey = getSlotKey(row, col);
+                delete wines[slotKey];
+                saveData();
+                renderFridge();
+                closeModal();
+            }
+        }
+
+        function openModal() {
+            document.getElementById('modal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('active');
+        }
+
+        loadData();
+        renderFridge();
+        updateStats();
+    </script>
+</body>
+</html>
