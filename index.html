@@ -414,6 +414,7 @@
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
         import { getDatabase, ref, set, remove, onValue } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+        import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 
         const firebaseConfig = {
             apiKey: "AIzaSyD7oBcx9e71nwM1zE6XCcy05a70F9oD4q0",
@@ -427,36 +428,24 @@
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
-        signInAnonymously(auth);
         const database = getDatabase(app);
-        const winesRef = ref(database, 'wines');
 
         const ROWS = 7;
         const COLS = 5;
 
         let wines = {};
-        let isInitialLoad = true;
         let searchQuery = '';
 
-        onValue(winesRef, (snapshot) => {
-            const data = snapshot.val();
-            wines = data || {};
-            renderFridge(searchQuery);
-            updateStats();
-
-            if (isInitialLoad) {
-                const localData = localStorage.getItem('wineFridgeData');
-                if (localData && Object.keys(wines).length === 0) {
-                    const localWines = JSON.parse(localData);
-                    if (Object.keys(localWines).length > 0) {
-                        if (confirm('Found local wine data. Would you like to upload it to the cloud?')) {
-                            set(winesRef, localWines);
-                        }
-                    }
-                }
-                localStorage.removeItem('wineFridgeData');
-                isInitialLoad = false;
-            }
+        // Sign in anonymously, then load data
+        signInAnonymously(auth).then(() => {
+            const winesRef = ref(database, 'wines');
+            
+            onValue(winesRef, (snapshot) => {
+                const data = snapshot.val();
+                wines = data || {};
+                renderFridge(searchQuery);
+                updateStats();
+            });
         });
 
         function updateStats() {
