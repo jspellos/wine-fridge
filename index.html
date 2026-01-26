@@ -426,6 +426,8 @@
         };
 
         const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        signInAnonymously(auth);
         const database = getDatabase(app);
         const winesRef = ref(database, 'wines');
 
